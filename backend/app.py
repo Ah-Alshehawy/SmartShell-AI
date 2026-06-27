@@ -1,48 +1,36 @@
-﻿from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import json
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from ai_logic import analyze_packet
 
 app = FastAPI()
 
-# Mock data
-mock_logs = [
-    {"timestamp": "2023-10-01T12:00:00Z", "level": "INFO", "message": "System started"},
-    {"timestamp": "2023-10-01T12:05:00Z", "level": "WARNING", "message": "Disk space low"}
-]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-mock_rules = [
-    {"id": 1, "description": "Check disk space"},
-    {"id": 2, "description": "Verify system start"}
-]
+logs = []
+rules = []
 
-# Models
-class Log(BaseModel):
-    timestamp: str
-    level: str
-    message: str
-
-class Rule(BaseModel):
-    id: int
-    description: str
-
-# Endpoints
 @app.get("/logs")
-def get_logs():
-    return mock_logs
+async def get_logs():
+    return logs
 
 @app.get("/rules")
-def get_rules():
-    return mock_rules
+async def get_rules():
+    return rules
 
-@app.post("/rules", response_model=Rule)
-async def create_rule(rule: Rule):
-    # Simulate rule creation by appending to the list
-    mock_rules.append(rule.dict())
-    return rule
+@app.post("/ai/analyze")
+async def analyze_packet_endpoint(request: Request):
+    data = await request.json()
+    packet_data = data.get("packet_data", None)
+    if not packet_data:
+        raise HTTPException(status_code=400, detail="Missing packet_data")
 
-@app.post("/ai/analyze", response_model=dict)
-async def ai_analyze():
-    # Dummy JSON response for AI analysis
-    return {"status": "success", "message": "Analysis complete"}
-
+    result = analyze_packet(packet_data)
+    logs.append({"data": packet_data, "action": result})
+    return {"action": result}
 
