@@ -6,7 +6,7 @@ services:
       context: ./backend
     container_name: smartshell-backend
     ports:
-      - "8000:8000"
+      - "8080:8000"
     environment:
       - OLLAMA_URL=http://host.docker.internal:11434
 
@@ -25,4 +25,4 @@ services:
     privileged: true
     network_mode: host
     environment:
-      - API_URL=http://127.0.0.1:8000
+      - API_URL=http://127.0.0.1:8080
